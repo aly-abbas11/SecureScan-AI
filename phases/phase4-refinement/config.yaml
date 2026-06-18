@@ -1,0 +1,27 @@
+seed: 42
+model:
+  name: SecureScanModel
+  codebert: microsoft/codebert-base
+  freeze_layers: 6
+  lstm_hidden: 256
+  lstm_layers: 2
+  dropout: 0.3
+  num_classes: 2
+
+training:
+  epochs: 5
+  batch_size: 16
+  learning_rate: 2e-5
+  patience: 3
+  max_length: 512
+  class_weights: [1.0, 3.0]
+
+data:
+  datasets:
+    - BigVul
+    - DiverseVul
+    - FormAI
+  train_split: 0.70
+  val_split: 0.15
+  test_split: 0.15
+  balance_ratio: 3

@@ -1,0 +1,33 @@
+# Data files
+data/
+*.csv
+*.parquet
+*.h5
+
+# Model checkpoints
+*.pt
+*.pth
+checkpoints/
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.env
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,212 @@
+{
+  "CWE-119": {
+    "name": "Buffer Overflow",
+    "severity": "Critical",
+    "description": "The program writes more data to a buffer than it can hold. This corrupts nearby memory and can allow attackers to execute malicious code.",
+    "why_dangerous": "Attackers can overwrite memory to hijack program execution, escalate privileges, or crash the system. Used in many famous exploits like Morris Worm.",
+    "bad_code": "\n// VULNERABLE CODE\nchar buffer[10];\nstrcpy(buffer, user_input);  // No length check!\n",
+    "good_code": "\n// FIXED CODE\nchar buffer[10];\nstrncpy(buffer, user_input, sizeof(buffer) - 1);\nbuffer[sizeof(buffer) - 1] = '\\0';  // Always null terminate\n",
+    "fix_steps": [
+      "Always check input length before copying",
+      "Use safe functions: strncpy instead of strcpy",
+      "Use snprintf instead of sprintf",
+      "Always null-terminate strings"
+    ]
+  },
+  "CWE-20": {
+    "name": "Improper Input Validation",
+    "severity": "High",
+    "description": "The program does not properly validate input from users or external sources before using it. This allows attackers to inject malicious data.",
+    "why_dangerous": "Unvalidated input can lead to SQL injection, command injection, buffer overflows, and many other attacks.",
+    "bad_code": "\n# VULNERABLE CODE\ndef process_age(age):\n    return int(age)  # No validation!\n",
+    "good_code": "\n# FIXED CODE\ndef process_age(age):\n    try:\n        age_int = int(age)\n        if age_int < 0 or age_int > 150:\n            raise ValueError(\"Age out of valid range\")\n        return age_int\n    except ValueError:\n        raise ValueError(\"Invalid age input\")\n",
+    "fix_steps": [
+      "Validate all input before processing",
+      "Check type, length, format, and range",
+      "Reject invalid input early",
+      "Use allowlists not denylists"
+    ]
+  },
+  "CWE-89": {
+    "name": "SQL Injection",
+    "severity": "Critical",
+    "description": "User input is directly inserted into SQL queries without sanitization. Attackers can manipulate the query to access or destroy the database.",
+    "why_dangerous": "Attackers can read all database data, modify or delete records, bypass authentication, and sometimes execute commands on the server.",
+    "bad_code": "\n# VULNERABLE CODE\nquery = \"SELECT * FROM users WHERE id = \" + user_id\ncursor.execute(query)\n",
+    "good_code": "\n# FIXED CODE\nquery = \"SELECT * FROM users WHERE id = %s\"\ncursor.execute(query, (user_id,))  # Parameterized query\n",
+    "fix_steps": [
+      "Never concatenate user input into SQL queries",
+      "Always use parameterized queries or prepared statements",
+      "Use an ORM like SQLAlchemy",
+      "Apply principle of least privilege to database accounts"
+    ]
+  },
+  "CWE-79": {
+    "name": "Cross-Site Scripting (XSS)",
+    "severity": "High",
+    "description": "User input is displayed on a webpage without being sanitized. Attackers inject malicious JavaScript that runs in other users browsers.",
+    "why_dangerous": "Attackers can steal session cookies, redirect users, deface websites, or perform actions on behalf of victims.",
+    "bad_code": "\n# VULNERABLE CODE\n@app.route('/search')\ndef search():\n    query = request.args.get('q')\n    return f\"<h1>Results for: {query}</h1>\"  # Direct injection!\n",
+    "good_code": "\n# FIXED CODE\nfrom markupsafe import escape\n@app.route('/search')\ndef search():\n    query = request.args.get('q')\n    return f\"<h1>Results for: {escape(query)}</h1>\"  # Escaped!\n",
+    "fix_steps": [
+      "Always escape user input before displaying in HTML",
+      "Use template engines that auto-escape by default",
+      "Implement Content Security Policy headers",
+      "Validate and sanitize all user input"
+    ]
+  },
+  "CWE-78": {
+    "name": "OS Command Injection",
+    "severity": "Critical",
+    "description": "User input is passed directly to system commands. Attackers can execute arbitrary commands on the server.",
+    "why_dangerous": "Complete server takeover. Attackers can read files, install malware, create backdoors, or destroy the system.",
+    "bad_code": "\n# VULNERABLE CODE\nimport os\nfilename = request.args.get('file')\nos.system(f\"cat {filename}\")  # DANGEROUS!\n",
+    "good_code": "\n# FIXED CODE\nimport subprocess\nimport shlex\nfilename = request.args.get('file')\n# Validate filename first\nif not filename.replace('_','').replace('-','').isalnum():\n    return \"Invalid filename\"\nresult = subprocess.run(['cat', filename],\n                       capture_output=True, text=True)\n",
+    "fix_steps": [
+      "Never pass user input to shell commands",
+      "Use subprocess with list arguments not shell=True",
+      "Validate input with strict allowlist",
+      "Use language built-in functions instead of shell commands"
+    ]
+  },
+  "CWE-22": {
+    "name": "Path Traversal",
+    "severity": "High",
+    "description": "User input is used to construct file paths without validation. Attackers use ../ sequences to access files outside intended directory.",
+    "why_dangerous": "Attackers can read sensitive files like /etc/passwd, configuration files with passwords, or private keys.",
+    "bad_code": "\n# VULNERABLE CODE\nfilename = request.args.get('file')\nwith open(f'/var/www/files/{filename}') as f:\n    return f.read()\n",
+    "good_code": "\n# FIXED CODE\nimport os\nfilename = request.args.get('file')\nbase_dir = '/var/www/files/'\nfull_path = os.path.realpath(os.path.join(base_dir, filename))\n# Check path is still inside base directory\nif not full_path.startswith(base_dir):\n    return \"Access denied\"\nwith open(full_path) as f:\n    return f.read()\n",
+    "fix_steps": [
+      "Use os.path.realpath to resolve the full path",
+      "Check that resolved path starts with allowed base directory",
+      "Use allowlist of permitted filenames",
+      "Never trust user-supplied file paths"
+    ]
+  },
+  "CWE-416": {
+    "name": "Use After Free",
+    "severity": "Critical",
+    "description": "Memory is accessed after it has been freed. This can corrupt data or allow attackers to execute malicious code.",
+    "why_dangerous": "Attackers can manipulate freed memory to execute arbitrary code or cause crashes.",
+    "bad_code": "\n// VULNERABLE CODE\nchar *ptr = malloc(10);\nfree(ptr);\nstrcpy(ptr, \"hello\");  // Use after free!\n",
+    "good_code": "\n// FIXED CODE\nchar *ptr = malloc(10);\nfree(ptr);\nptr = NULL;  // Always set to NULL after free\n// Now any accidental use will crash predictably\n// instead of causing undefined behavior\n",
+    "fix_steps": [
+      "Always set pointer to NULL after freeing",
+      "Use smart pointers in C++",
+      "Use memory-safe languages when possible",
+      "Use static analysis tools to detect use-after-free"
+    ]
+  },
+  "CWE-125": {
+    "name": "Out-of-bounds Read",
+    "severity": "High",
+    "description": "The program reads data past the end of an allocated buffer. Can expose sensitive memory contents.",
+    "why_dangerous": "Can leak sensitive data like passwords or encryption keys from memory. Famous example: Heartbleed bug.",
+    "bad_code": "\n// VULNERABLE CODE\nint arr[10];\nfor (int i = 0; i <= 10; i++) {  // Should be i < 10\n    printf(\"%d\", arr[i]);  // Reads past end!\n}\n",
+    "good_code": "\n// FIXED CODE\nint arr[10];\nfor (int i = 0; i < 10; i++) {  // Correct boundary\n    printf(\"%d\", arr[i]);\n}\n",
+    "fix_steps": [
+      "Always use strict less-than in array loops",
+      "Check array bounds before accessing",
+      "Use sizeof to get actual buffer size",
+      "Consider using safer container types"
+    ]
+  },
+  "CWE-190": {
+    "name": "Integer Overflow",
+    "severity": "High",
+    "description": "An integer calculation produces a result too large for the variable type. The value wraps around to a small or negative number.",
+    "why_dangerous": "Can bypass security checks, cause buffer overflows, or lead to incorrect program behavior.",
+    "bad_code": "\n// VULNERABLE CODE\nunsigned int size = user_input * 4;  // Can overflow!\nchar *buf = malloc(size);\n",
+    "good_code": "\n// FIXED CODE\nif (user_input > UINT_MAX / 4) {\n    return ERROR;  // Would overflow\n}\nunsigned int size = user_input * 4;\nchar *buf = malloc(size);\n",
+    "fix_steps": [
+      "Check for overflow before arithmetic operations",
+      "Use larger integer types when needed",
+      "Use safe integer libraries",
+      "Validate numeric input ranges"
+    ]
+  },
+  "CWE-476": {
+    "name": "NULL Pointer Dereference",
+    "severity": "Medium",
+    "description": "The program dereferences a pointer that is NULL. This causes a crash or unexpected behavior.",
+    "why_dangerous": "Can crash the program causing denial of service. In some cases can be exploited for code execution.",
+    "bad_code": "\n// VULNERABLE CODE\nchar *ptr = get_value();\nprintf(\"%s\", ptr);  // What if ptr is NULL?\n",
+    "good_code": "\n// FIXED CODE\nchar *ptr = get_value();\nif (ptr == NULL) {\n    printf(\"Error: value not found\");\n    return ERROR;\n}\nprintf(\"%s\", ptr);  // Safe now\n",
+    "fix_steps": [
+      "Always check pointer for NULL before dereferencing",
+      "Initialize pointers to NULL",
+      "Check return values of functions that can return NULL",
+      "Use defensive programming practices"
+    ]
+  },
+  "CWE-362": {
+    "name": "Race Condition",
+    "severity": "High",
+    "description": "Two threads access shared data simultaneously without proper synchronization. Results are unpredictable.",
+    "why_dangerous": "Can cause data corruption, privilege escalation, or security bypass depending on the context.",
+    "bad_code": "\n# VULNERABLE CODE\nbalance = get_balance()\nif balance >= amount:\n    withdraw(amount)  # Another thread can modify between check and withdraw!\n",
+    "good_code": "\n# FIXED CODE\nimport threading\nlock = threading.Lock()\n\nwith lock:  # Atomic check-and-withdraw\n    balance = get_balance()\n    if balance >= amount:\n        withdraw(amount)\n",
+    "fix_steps": [
+      "Use locks/mutexes for shared resources",
+      "Make check-and-act operations atomic",
+      "Use thread-safe data structures",
+      "Minimize shared state between threads"
+    ]
+  },
+  "CWE-200": {
+    "name": "Information Exposure",
+    "severity": "Medium",
+    "description": "The program accidentally exposes sensitive information to unauthorized users through error messages, logs, or responses.",
+    "why_dangerous": "Leaks passwords, API keys, system paths, or internal logic that helps attackers plan their attack.",
+    "bad_code": "\n# VULNERABLE CODE\ntry:\n    connect_to_db(password=\"secret123\")\nexcept Exception as e:\n    return str(e)  # Exposes internal details!\n",
+    "good_code": "\n# FIXED CODE\ntry:\n    connect_to_db(password=\"secret123\")\nexcept Exception as e:\n    log.error(f\"DB error: {e}\")  # Log internally\n    return \"Service temporarily unavailable\"  # Generic message to user\n",
+    "fix_steps": [
+      "Never expose stack traces to users",
+      "Use generic error messages for users",
+      "Log detailed errors internally only",
+      "Remove debug code before production"
+    ]
+  },
+  "CWE-264": {
+    "name": "Permissions and Privileges",
+    "severity": "High",
+    "description": "The program does not properly manage permissions or privileges, allowing unauthorized access to resources.",
+    "why_dangerous": "Users can access data they should not see, escalate privileges, or perform unauthorized actions.",
+    "bad_code": "\n# VULNERABLE CODE\ndef delete_user(user_id):\n    db.execute(f\"DELETE FROM users WHERE id={user_id}\")\n    # No permission check!\n",
+    "good_code": "\n# FIXED CODE\ndef delete_user(requesting_user, user_id):\n    if not requesting_user.is_admin:\n        raise PermissionError(\"Admin access required\")\n    db.execute(\"DELETE FROM users WHERE id=%s\", (user_id,))\n",
+    "fix_steps": [
+      "Always check permissions before sensitive operations",
+      "Apply principle of least privilege",
+      "Use role-based access control",
+      "Log all privilege escalation attempts"
+    ]
+  },
+  "CWE-399": {
+    "name": "Resource Management Error",
+    "severity": "Medium",
+    "description": "The program does not properly manage resources like memory, file handles, or network connections.",
+    "why_dangerous": "Resource leaks cause system slowdown, crashes, or denial of service over time.",
+    "bad_code": "\n# VULNERABLE CODE\ndef read_file(path):\n    f = open(path)\n    data = f.read()\n    return data  # File handle never closed!\n",
+    "good_code": "\n# FIXED CODE\ndef read_file(path):\n    with open(path) as f:  # Auto-closes\n        data = f.read()\n    return data\n",
+    "fix_steps": [
+      "Always close file handles, connections, and resources",
+      "Use context managers (with statements in Python)",
+      "Use RAII patterns in C++",
+      "Monitor resource usage in production"
+    ]
+  },
+  "CWE-798": {
+    "name": "Hardcoded Credentials",
+    "severity": "Critical",
+    "description": "Passwords, API keys, or other secrets are hardcoded directly in the source code.",
+    "why_dangerous": "Anyone with access to the code can see the credentials. Common cause of data breaches when code is pushed to public GitHub.",
+    "bad_code": "\n# VULNERABLE CODE\nDB_PASSWORD = \"super_secret_123\"\nAPI_KEY = \"sk-abc123def456\"\n",
+    "good_code": "\n# FIXED CODE\nimport os\nDB_PASSWORD = os.environ.get(\"DB_PASSWORD\")\nAPI_KEY = os.environ.get(\"API_KEY\")\n# Store secrets in .env file (never commit to git!)\n",
+    "fix_steps": [
+      "Never hardcode credentials in source code",
+      "Use environment variables",
+      "Use secrets management tools like AWS Secrets Manager",
+      "Add .env to .gitignore immediately"
+    ]
+  }
+}

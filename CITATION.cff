@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+title: SecureScan AI — Source Code Vulnerability Detection
+authors:
+  - family-names: Shah
+    given-names: Ali Abbas
+  - family-names: Tanveer
+    given-names: Salman
+  - family-names: Ali
+    given-names: Hammad
+version: 1.0.0
+date-released: 2026-06-02
+url: https://github.com/Salman1122334411/SecureScan-AI
+doi: ""
+license: MIT
