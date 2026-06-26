@@ -1,0 +1,32 @@
+name: Daily README Update
+
+on:
+  schedule:
+    # Runs every day at 9:00 AM UTC (2 PM PKT)
+    - cron: '0 9 * * *'
+  workflow_dispatch: # allows manual trigger from Actions tab
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Update timestamp in README
+        run: |
+          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          if grep -q "Last updated:" README.md; then
+            sed -i "s/Last updated:.*/Last updated: $TIMESTAMP/" README.md
+          else
+            echo -e "\n---\nLast updated: $TIMESTAMP" >> README.md
+          fi
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: daily README update" && git push)
