@@ -473,4 +473,4 @@ MIT — see [LICENSE](LICENSE)
 </div>
 
 ---
-Last updated: 2026-07-27 12:20:27 UTC
+Last updated: 2026-07-28 11:15:12 UTC
