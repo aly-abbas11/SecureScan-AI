@@ -17,6 +17,7 @@ dist/
 build/
 .env
 .venv/
+.pytest_cache/
 
 # Jupyter
 .ipynb_checkpoints/
