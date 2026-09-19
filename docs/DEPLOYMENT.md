@@ -39,13 +39,14 @@ python src/training/train.py
 ### Using Pre-trained Model
 
 ```python
-import torch
+from src.models.loader import DEFAULT_CHECKPOINT_DIR, build_model, load_checkpoint
 from src.models.securescan_model import SecureScanModel
 from transformers import AutoTokenizer
 
-# Load model
-model = SecureScanModel()
-model.load_state_dict(torch.load('src/models/baseline_mlp.pt'))
+# Built from the encoder config here; every parameter is then taken from the
+# checkpoint, which is validated before anything is applied.
+model = build_model(SecureScanModel, from_scratch=True)
+load_checkpoint(model, DEFAULT_CHECKPOINT_DIR / 'best_model.pt')
 model.eval()
 
 # Load tokenizer
@@ -67,6 +68,12 @@ with torch.no_grad():
 print(f"Prediction: {prediction}")
 ```
 
+Checkpoints are not committed (`*.pt` is gitignored): train one, or drop a
+released checkpoint into `checkpoints/`. A checkpoint that does not fit the
+architecture raises instead of leaving layers randomly initialised — the snippet
+that used to be here loaded an MLP checkpoint into this model, which silently
+discarded every weight.
+
 ### Command Line Interface
 
 ```bash
@@ -77,11 +84,17 @@ python -c "from src.training.train import final_evaluation; ..."
 ## Testing
 
 ```bash
-# Run unit tests
+# Run unit tests (offline: a tiny local encoder stands in for CodeBERT)
 pytest tests/ -v
 
-# Run specific test
-python tests/test_pipeline.py
+# Run a single module
+pytest tests/test_loader.py -v
+```
+
+The demo app can be exercised without a checkpoint:
+
+```bash
+python app.py --smoke-test   # runs the UI with untrained weights
 ```
 
 ## Project Structure for Deployment
