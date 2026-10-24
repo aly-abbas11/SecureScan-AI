@@ -401,13 +401,50 @@ pip install -r requirements.txt
 python src/training/train.py
 ```
 
+### Run the Demo App
+```bash
+# Needs a trained checkpoint at checkpoints/best_model.pt
+python app.py
+
+# Or exercise the interface with untrained weights (no checkpoint required)
+python app.py --smoke-test
+```
+
+Then open http://localhost:7860. `python app.py --help` lists the remaining flags
+(`--checkpoint`, `--threshold`, `--host`, `--port`, `--share`).
+
+Model weights are not committed (`*.pt` is gitignored), so real inference needs a
+trained or downloaded checkpoint. Checkpoints are validated on load: one that
+does not match the architecture is a hard error rather than a silently partial
+load.
+
+### Run Tests
+```bash
+pytest tests/ -v
+```
+
+The model tests build a tiny local encoder instead of downloading CodeBERT, so
+the suite runs offline in about a second.
+
+### CWE Remediation Lookup
+```bash
+python -m src.models.fix_suggester --list
+python -m src.models.fix_suggester CWE-119 89 79
+```
+
 ### Run Inference
 ```python
+from src.models.loader import DEFAULT_CHECKPOINT_DIR, build_model, load_checkpoint
 from src.models.securescan_model import SecureScanModel
 from transformers import AutoTokenizer
 import torch
 
-model     = SecureScanModel()
+# Built from the encoder config, then every parameter is taken from the
+# checkpoint (load_checkpoint refuses anything below 100% coverage).
+model = build_model(SecureScanModel, from_scratch=True)
+load_checkpoint(model, DEFAULT_CHECKPOINT_DIR / 'best_model.pt')
+model.eval()
+
 tokenizer = AutoTokenizer.from_pretrained('microsoft/codebert-base')
 code      = "char buf[10]; strcpy(buf, user_input);"
 inputs    = tokenizer(code, return_tensors='pt', truncation=True, max_length=512)
